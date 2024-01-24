@@ -1,0 +1,47 @@
+#!/bin/bash
+# Ref: https://hub.docker.com/r/bitnami/jasperreports
+
+# Clean Up
+podman rm -f mariadb
+podman rm -f jasperreports
+podman network remove -f jasperreports-network
+podman volume remove -f  mariadb_data
+podman volume remove -f jasperreports_data
+
+
+# New Deployment
+podman network create jasperreports-network
+podman volume create mariadb_data
+podman volume create jasperreports_data
+
+
+podman run -d --name mariadb   \
+  --env ALLOW_EMPTY_PASSWORD=yes \
+  --env MARIADB_USER=bn_jasperreports \
+  --env MARIADB_PASSWORD=bitnami \
+  --env MARIADB_DATABASE=bitnami_jasperreports \
+  --network jasperreports-network \
+  --volume mariadb_data:/bitnami/mariadb \
+  docker.io/bitnami/mariadb:latest
+
+
+podman run -d --name jasperreports \
+  -p 19090:8080 -p 19444:8443 \
+  --env JASPERREPORTS_DATABASE_USER=bn_jasperreports \
+  --env JASPERREPORTS_DATABASE_PASSWORD=bitnami \
+  --env JASPERREPORTS_DATABASE_NAME=bitnami_jasperreports \
+  --network jasperreports-network \
+  --volume jasperreports_data:/bitnami/jasperreports \
+  --log-level=debug \
+  docker.io/bitnami/jasperreports:latest
+
+echo "##########################################################"
+timeout 30 podman logs -f jasperreports
+echo "##########################################################"
+echo "http://$(curl -s ifconfig.me):19090 "
+echo "
+
+JASPERREPORTS_USERNAME: JasperReports application username. Default: jasperadmin
+JASPERREPORTS_PASSWORD: JasperReports application password. Default: bitnami
+
+"

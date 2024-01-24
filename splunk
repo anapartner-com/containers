@@ -1,0 +1,131 @@
+#!/bin/bash
+echo ""
+echo "############################################################################"
+echo "For this lab: "
+echo " We will use the Free/Limited license for Splunk "
+echo "Ref:"
+echo " https://github.com/Splunk/docker-Splunk"
+echo " https://splunk.github.io/docker-splunk/EXAMPLES.html#create-standalone-with-splunk-free-license "
+echo " https://kinneygroup.com/blog/splunk-default-ports/ "
+echo " https://blog.nashcom.de/nashcomblog.nsf/dx/weekend-research-project-splunk.htm "
+echo " https://docs.splunk.com/Documentation/Splunk/9.1.2/Installation/DeployandrunSplunkEnterpriseinsideDockercontainers "
+echo " https://community.splunk.com/t5/Installation/Why-does-Splunk-assist-constantly-fail-on-9-1-0-1-version-after/m-p/652510 "
+echo ""
+echo "Note:  Keep PORT as 8000 for HTTPS traffic to avoid search/replacement for this port"
+echo ""
+echo ""
+echo ""
+echo ""
+echo "############################################################################"
+
+NAME=splunk
+USERNAME=admin
+PASSWORD=admin123#
+REPO_IMAGE=docker.io/splunk/splunk:latest
+EXTERNAL_PORT=8000
+#EXTERNAL_PORT=8443
+DEBUG='--log-level=info'
+#DEBUG='--log-level=debug'
+
+
+echo ""
+echo "############################################################################"
+echo "Remove prior running container"
+echo "############################################################################"
+podman rm -f ${NAME}
+sleep 5
+
+
+echo ""
+echo "############################################################################"
+echo "Deploy ${NAME} container with minimal parameters"
+echo "############################################################################"
+
+
+podman run --name ${NAME} -h ${NAME} -d -p ${EXTERNAL_PORT}:8000 \
+ -p 8088:8088 -p 1997:1997 -p 9997:9997 \
+ -e SPLUNK_HTTP_ENABLESSL=true \
+ -e SPLUNK_PASSWORD=${PASSWORD} \
+ -e SPLUNK_LICENSE_URI=Free \
+ -e SPLUNK_START_ARGS='--accept-license' \
+ --stop-timeout=60 \
+  ${DEBUG} \
+  ${REPO_IMAGE}
+
+
+echo ""
+echo "############################################################################"
+echo "View running containers / pods"
+echo "############################################################################"
+podman ps -a
+
+
+
+echo ""
+echo "############################################################################"
+echo "View logs for 60 seconds"
+echo "############################################################################"
+timeout 60 podman logs -f ${NAME}
+
+echo ""
+echo "############################################################################"
+echo "Validate ${NAME} is running with curl check "
+echo "curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT} "
+echo "############################################################################"
+curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}
+
+echo ""
+echo "############################################################################"
+echo "Use the Chrome browser to access the container's UI via  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}"
+echo "with credentials username: ${USERNAME} and password: ${PASSWORD} "
+echo " since we are using self-generated certs in this minimal lab, "
+echo " you will need to accept access in the Chrome browser "
+echo ""
+echo "While the container's UI will allow access in about 1-5 minutes after starting "
+echo " it may take 10-30 minutes for any supporting data/database to be downloaded to this"
+echo " deployment before you can configure and start utilizing the solution"
+echo ""
+echo "Watch for these banners/messages in the logs"
+echo "
+
+===============================================================================
+splunk_common : Start Splunk via CLI ---------------------------------- 146.98s
+splunk_common : Restart the splunkd service - Via CLI ----------------- 133.67s
+splunk_common : Update /opt/splunk/etc --------------------------------- 73.64s
+
+"
+echo ""
+echo ""
+echo " You may monitor the download with podman logs command: "
+echo "podman logs -f ${NAME}"
+echo " You may access the shell of the container to view running network ports/services"
+echo "podman exec -it -u root  ${NAME} bash -il "
+echo "podman exec -it -u root  ${NAME} bash -c 'netstat -tnlp' "
+echo "############################################################################"
+echo ""
+
+echo ""
+echo "############################################################################"
+echo " Fix a UI issue in Free license "
+echo " Create an update for Splunk configurations file and restart Splunk"
+echo "############################################################################"
+
+cat << EOF > /tmp/web-features.conf
+[feature:page_migration]
+enable_home_vnext = false
+EOF
+ls -lart /tmp/web-features.conf
+
+echo "podman cp /tmp/web-features.conf splunk:/opt/splunk/etc/system/local/web-features.conf "
+podman cp  /tmp/web-features.conf splunk:/opt/splunk/etc/system/local/web-features.conf
+echo "podman exec -it -u root ${NAME} bash -c 'chown splunk ${SPLUNK_HOME}/etc/system/local/web-features.conf ' "
+podman exec -it -u root ${NAME} bash -c 'chown splunk ${SPLUNK_HOME}/etc/system/local/web-features.conf '
+echo "podman exec -it -u ${NAME} ${NAME} bash -c 'cat ${SPLUNK_HOME}/etc/system/local/web-features.conf ; ls -lart ${SPLUNK_HOME}/etc/system/local/web-features.conf ' "
+podman exec -it -u ${NAME} ${NAME} bash -c 'cat ${SPLUNK_HOME}/etc/system/local/web-features.conf ; ls -lart ${SPLUNK_HOME}/etc/system/local/web-features.conf '
+
+echo ""
+echo "############################################################################"
+echo " Restart Splunk to resolve the UI issue"
+echo "############################################################################"
+podman exec -it -u ${NAME} ${NAME} bash -c '/opt/splunk/bin/splunk restart'
+

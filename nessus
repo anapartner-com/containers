@@ -1,0 +1,80 @@
+#!/bin/bash
+echo ""
+echo "############################################################################"
+echo "For this lab: "
+echo " Please request a free activation code from Nessus Tenable's site"
+echo " https://www.tenable.com/products/nessus/nessus-essentials "
+echo " https://docs.tenable.com/nessus/Content/GenerateYourLicense.htm "
+echo " and update ACTIVATION_CODE variable"
+echo " Ref. https://docs.tenable.com/nessus/Content/DeployNessusDocker.htm "
+echo "############################################################################"
+ACTIVATION_CODE=VVVV-XXXX-QQQQ-XXX-CCCC
+USERNAME=admin
+PASSWORD=admin
+REPO_IMAGE=docker.io/tenableofficial/nessus:latest
+EXTERNAL_PORT=9443
+
+
+echo ""
+echo "############################################################################"
+echo "Remove prior running pod"
+echo "############################################################################"
+podman rm -f nessus
+sleep 5
+
+
+echo ""
+echo "############################################################################"
+echo "Deploy nessus pod with minimal parameters"
+echo "############################################################################"
+
+podman run --name nessus -h nessus -d -p ${EXTERNAL_PORT}:8834 \
+ -e ACTIVATION_CODE=${ACTIVATION_CODE} \
+ -e USERNAME=${USERNAME} -e PASSWORD=${PASSWORD} \
+ -e AUTO_UPDATE=all \
+  ${REPO_IMAGE}
+
+
+echo ""
+echo "############################################################################"
+echo "View running pods"
+echo "############################################################################"
+podman ps -a
+
+echo ""
+echo "############################################################################"
+echo "View logs for 60 seconds"
+echo "############################################################################"
+timeout 60 podman logs -f nessus
+
+
+echo ""
+echo "############################################################################"
+echo "Validate nessus is running with curl check "
+echo "curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT} "
+echo "############################################################################"
+curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}
+
+echo ""
+echo "############################################################################"
+echo "Use the Chrome browser to access the nessus UI via  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}"
+echo "with credentials username: ${USERNAME} and password: ${PASSWORD} "
+echo " since we are using self-generated certs in this minimal lab, "
+echo " you will need to accept access in the Chrome browser "
+echo ""
+echo "While Nessus UI will allow access in about 1 minute after starting "
+echo " it may take 60-180 minutes for the large Nessus database to be downloaded to this"
+echo " deployment before you can configure and start a vulnerability scan"
+echo ""
+echo "Watch for these messages in the logs"
+echo ""
+echo "   Attempting to configure Nessus with the provided activation code. "
+echo "   Activating with code:  "
+echo "   Activated scanner successfully. "
+echo "   Auto updates are on. "
+echo ""
+echo ""
+echo " You may monitor the download with podman logs command: "
+echo "podman logs -f nessus"
+echo "############################################################################"
+echo ""

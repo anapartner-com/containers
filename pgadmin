@@ -1,0 +1,131 @@
+#!/bin/bash
+echo ""
+echo "############################################################################"
+echo "For this lab: "
+echo " We will use the Free/Limited license for PGadmin and PostGresDB "
+echo "Ref:"
+echo "https://www.pgadmin.org/ "
+echo "https://www.pgadmin.org/docs/pgadmin4/development/import_export_servers.html"
+echo "https://anasdidi.dev/articles/200713-docker-compose-postgres/"
+echo "https://access.crunchydata.com/documentation/pgadmin4/4.3/container_deployment.html"
+echo "https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html"
+echo ""
+echo ""
+echo "Note:  had to use :U for /certs folder to avoid permission issue with pgadmin ID"
+echo ""
+echo ""
+echo "############################################################################"
+
+NAME=pgadmin
+USERNAME=ana
+PASSWORD=admin123#
+REPO_IMAGE=docker.io/dpage/pgadmin4:latest
+EXTERNAL_PORT=19443
+DEBUG='--log-level=info'
+#DEBUG='--log-level=debug'
+
+
+echo ""
+echo "############################################################################"
+echo "Remove prior running container"
+echo "############################################################################"
+podman pod rm -f ${NAME}-pod
+PGDB_DATA=/tmp/pgadmin/postgres/data/volume
+PGAD_DATA=/tmp/pgadmin/var/lib/pgadmin
+sudo rm -rf ${PGAD_DATA}
+sudo rm -rf ${PGDB_DATA}
+mkdir -p ${PGAD_DATA}
+mkdir -p ${PGDB_DATA}
+sleep 5
+
+
+echo ""
+echo "############################################################################"
+echo "Deploy ${NAME} container with minimal parameters"
+echo "############################################################################"
+
+cat << EOF > ${PGAD_DATA}/servers.json
+{
+    "Servers": {
+        "1": {
+            "Name": "postgresdb",
+            "Group": "Servers",
+            "Host": "postgresdb",
+            "Port": 5432,
+            "MaintenanceDB": "postgres",
+            "Username": "${USERNAME}",
+            "UseSSHTunnel": 0,
+            "TunnelPort": "22",
+            "TunnelAuthentication": 0,
+            "KerberosAuthentication": false,
+            "ConnectionParameters": {
+                "sslmode": "prefer",
+                "connect_timeout": 10,
+                "sslcert": "<STORAGE_DIR>/.postgresql/postgresql.crt",
+                "sslkey": "<STORAGE_DIR>/.postgresql/postgresql.key"
+            }
+        }
+    }
+}
+EOF
+
+podman run -d --pod=new:${NAME}-pod \
+ --name ${NAME} \
+ -p ${EXTERNAL_PORT}:443 \
+ -e "PGADMIN_DEFAULT_EMAIL=${USERNAME}@anapartner.dev" \
+ -e "PGADMIN_DEFAULT_PASSWORD=${PASSWORD}" \
+ -e 'PGADMIN_ENABLE_TLS=True' \
+ -v ${PGAD_DATA}:/var/lib/pgadmin:z \
+ -v ${PGAD_DATA}/servers.json:/pgadmin4/servers.json \
+ -v ${LETSENCRYPT}/combined_chain_with_cert.pem:/certs/server.cert:U \
+ -v ${LETSENCRYPT}/privkey.pem:/certs/server.key:U \
+ docker.io/dpage/pgadmin4:latest
+
+podman run -d --pod=${NAME}-pod \
+ --name postgresdb \
+ -v ${PGDB_DATA}:/var/lib/postgresql/data:z \
+ -e POSTGRES_PASSWORD=${PASSWORD} \
+ -e POSTGRES_USER=${USERNAME} \
+ docker.io/library/postgres:latest
+
+echo ""
+echo "############################################################################"
+echo "View running containers / pods"
+echo "############################################################################"
+podman ps -a --pod
+
+
+echo ""
+echo "############################################################################"
+echo "Validate ${NAME} is running with curl check "
+echo "curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT} "
+echo "############################################################################"
+curl -vk  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}
+
+echo ""
+echo "############################################################################"
+echo "Use the Chrome browser to access the container's UI via  https://$(curl -s ifconfig.me):${EXTERNAL_PORT}"
+echo "with credentials username: ${USERNAME} and password: ${PASSWORD} "
+echo " since we are using self-generated certs in this minimal lab, "
+echo " you will need to accept access in the Chrome browser "
+echo ""
+echo "While the container's UI will allow access in about 1-5 minutes after starting "
+echo " it may take 10-30 minutes for any supporting data/database to be downloaded to this"
+echo " deployment before you can configure and start utilizing the solution"
+echo ""
+echo "Watch for these banners/messages in the logs"
+echo ""
+echo ""
+echo " You may monitor the download with podman logs command: "
+echo "podman logs -f ${NAME}"
+echo " You may access the shell of the container to view running network ports/services"
+echo "podman exec -it -u root  ${NAME} sh "
+echo "podman exec -it -u root  ${NAME} sh -c 'netstat -tnlp' "
+echo "############################################################################"
+echo ""
+
+echo ""
+echo "############################################################################"
+echo "View logs for 15 seconds"
+echo "############################################################################"
+timeout 15 podman logs -f ${NAME}

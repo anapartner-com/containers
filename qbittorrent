@@ -1,0 +1,224 @@
+#!/bin/bash
+################################################################
+#
+#  Continer version of qBittorrent
+#   - Normal download of Wikipedia English of 102 GB takes over 6 hours
+#   - With container use of qBittorrent, we can reduce this down to < 15 min
+#
+#
+# Notes:
+#
+# WEBUI_PORT variable:
+#  Due to issues with CSRF and port mapping, should you be required to
+#  alter the port for the web UI; you need to change both sides of
+#  the -p 8080 switch AND set the WEBUI_PORT variable to the new port.
+#
+# For example, to set the port to 8090, you need to set -p 8090:8090 and -e WEBUI_PORT=8090
+#
+# BROWSERS: (Warning)
+#   For HTTP protocol, use MS Edge or Opera
+#   - to avoid issues where authentication works, but the main UI screen does not load.
+#   - You may use Firefox/Chrome, but will need to remove HTTPS always feature or set exceptions for the UI
+#   Alternatively, enable TLS for the WebUI to avoid any issues with a modern browser
+#
+#  Use sed or other tools to update qBittorrent.conf file for post-install configurations
+#
+# Ref. https://github.com/linuxserver/docker-qbittorrent
+# https://github.com/qbittorrent/qBittorrent/wiki/
+# https://github.com/qbittorrent/qBittorrent/wiki/Frequently-Asked-Questions#where-does-qbittorrent-save-its-settings
+# https://hub.docker.com/r/linuxserver/qbittorrent
+# https://github.com/crazy-max/docker-qbittorrent/blob/master/entrypoint.sh
+#
+# ANA
+#
+################################################################
+
+WEBUI_PORT=8090
+DEBUG_LEVEL=warn
+#DEBUG_LEVEL=debug
+CONFIG=qbittorrent/config
+DOWNLOADS=qbittorrent/downloads
+#CONTAINER_IMAGE=docker.io/linuxserver/qbittorrent:amd64-4.6.2
+CONTAINER_IMAGE=lscr.io/linuxserver/qbittorrent:latest
+FULL_WIKIPEDIA_DOWNLOAD=TRUE
+#SELECT_STRING=_en_
+SELECT_STRING=_en_all_maxi
+
+echo ""
+echo "############################################################################"
+echo "# Stop any prior version before removal of folders "
+echo "############################################################################"
+echo "podman rm -f qbittorrent &>/dev/null "
+podman rm -f qbittorrent &>/dev/null
+
+echo ""
+echo "############################################################################"
+echo "Define and create local host config and download folders for qBittorrent"
+echo "This will allow us to access the files outside of the container"
+echo "############################################################################"
+#sudo rm -rf qbittorrent
+sudo rm -rf ${CONFIG}/qBittorrent
+sudo mkdir -p ${CONFIG}/qBittorrent
+sudo mkdir -p ${DOWNLOADS}
+sudo chown -R 100999:100999 ./${CONFIG}
+sudo chown -R 100999:100999 ./${DOWNLOADS}
+
+
+echo ""
+echo "############################################################################"
+echo "# Deploy new instance of qBittorrent to allow it to create a default configuration file"
+echo "  and then we will stop it.  We will update the configuration file"
+echo "############################################################################"
+echo "podman run -d --name=qbittorrent \ "
+podman run -d \
+  --name=qbittorrent \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -e TZ=Etc/UTC \
+  -e WEBUI_PORT=${WEBUI_PORT} \
+  -p ${WEBUI_PORT}:${WEBUI_PORT} \
+  -p 6881:6881 \
+  -p 6881:6881/udp \
+  -v ./${CONFIG}:/config:z \
+  -v ./${DOWNLOADS}:/downloads:z \
+  --restart unless-stopped \
+  --log-level=${DEBUG_LEVEL} \
+  ${CONTAINER_IMAGE}
+
+sleep 5
+echo ""
+echo "############################################################################"
+echo "podman stop qbittorrent "
+echo "############################################################################"
+podman stop qbittorrent
+
+#exit
+echo ""
+echo "############################################################################"
+echo "# Customized the qBittorrent configuration that we could not do "
+echo "# via the existing container from linuxserver.io/qbittorrent "
+echo "############################################################################"
+echo "# To avoid issues with Chrome and Firefox with HTTPS protocol "
+echo "# Copy LetsEncrypt Certs/Key "
+echo "############################################################################"
+sudo cp -r -p ./labs/letsencrypt ${CONFIG}
+ls -lart ./${CONFIG}/letsencrypt
+
+
+echo ""
+echo "############################################################################"
+echo "# Enable a monitor folder for qBittorrent for torrent/magnet files "
+echo "############################################################################"
+cat << 'EOF' | sudo tee ./${CONFIG}/qBittorrent/watched_folders.json
+{
+    "/downloads": {
+        "add_torrent_params": {
+            "category": "",
+            "download_limit": -1,
+            "download_path": "",
+            "inactive_seeding_time_limit": -2,
+            "operating_mode": "AutoManaged",
+            "ratio_limit": -2,
+            "save_path": "",
+            "seeding_time_limit": -2,
+            "skip_checking": false,
+            "tags": [
+            ],
+            "upload_limit": -1
+        },
+        "recursive": false
+    }
+}
+EOF
+# Update permissions to ensure local ID has access
+sudo chown 100999:100999 ./${CONFIG}/qBittorrent/watched_folders.json
+
+
+echo ""
+echo "############################################################################"
+echo "We will now modify the configuration file"
+echo "############################################################################"
+ls -lart ./${CONFIG}/qBittorrent/qBittorrent.conf
+echo "################ BEFORE ####################################################"
+cat -A ./${CONFIG}/qBittorrent/qBittorrent.conf
+echo "############################################################################"
+sudo sed -i 's|WebUI\\ServerDomains=*|WebUI\\ServerDomains=*\nAAAAA|g' ./${CONFIG}/qBittorrent/qBittorrent.conf
+sudo sed -i 's|AAAAA|WebUI\\HTTPS\\Enabled=true\nWebUI\\HTTPS\\CertificatePath=/config/letsencrypt/cert.pem\nWebUI\\HTTPS\\KeyPath=/config/letsencrypt/privkey.pem\n|g' ./${CONFIG}/qBittorrent/qBittorrent.conf
+# This will allow use of other pods to use the completed zim files and not watch the incomplete files.
+sudo sed -i 's|\[BitTorrent\]|\[BitTorrent\]\nSession\\AddExtensionToIncompleteFiles=true|g'  ./${CONFIG}/qBittorrent/qBittorrent.conf
+echo "############################################################################"
+ls -lart ./${CONFIG}/qBittorrent/qBittorrent.conf
+echo "################ AFTER w/ CERTS#############################################"
+cat -A ./${CONFIG}/qBittorrent/qBittorrent.conf
+echo "############################################################################"
+
+
+echo ""
+echo "############################################################################"
+echo "Seed an example download file using the magnet or torrent protocol"
+echo "We will use a single ZIM file from kiwix.org - download Wikipedia "
+echo " or if FULL_WIKIPEDIA_DOWNLOAD=TRUE, then we will download all 300+ files"
+echo " and/or be selective with the string of: 'en_all_maxi' of about 40 files "
+rm -rf zim.txt
+rm -rf zim.magnet
+
+sleep 5
+if [ ${FULL_WIKIPEDIA_DOWNLOAD}X = "TRUE"X ]
+  then
+echo "############### Download all magnet links from kiwix site that match: ${SELECT_STRING} "
+echo ""
+echo "curl -ks https://wiki.kiwix.org/wiki/Content_in_all_languages | grep -Po '(?<=href=\")[^\"]*' | grep magnet | grep ${SELECT_STRING} | sudo tee -a zim.txt "
+curl -ks https://wiki.kiwix.org/wiki/Content_in_all_languages | grep -Po '(?<=href=")[^"]*' | grep magnet | grep ${SELECT_STRING} | sudo tee -a zim.txt
+echo "############### Download all magnet files from kiwix site###################"
+cat zim.txt | while IFS='' read -r LINE || [ -n "$LINE" ] ; do curl -skL ${LINE}| awk -F\& '{print $1}'| tee -a zim.magnet ; done
+  else
+echo "############################################################################"
+# Single 2GB file to test process
+cat << 'EOF' > zim.magnet
+magnet:?xt=urn:btih:c9092f2d678410ccc3616ac31ae04851ad58fd0f
+EOF
+
+fi
+
+sudo cp -r -p zim.magnet ./${DOWNLOADS}
+
+echo ""
+echo "############################################################################"
+echo "Re-Start qBittorrent podman with custom configuration and one seed file"
+echo "############################################################################"
+echo "podman start qbittorrent "
+podman start qbittorrent
+sleep 5
+echo ""
+echo "############################################################################"
+echo "View the logs that contain the generated passsword for 'admin' "
+echo "podman logs -f qbittorrent "
+echo "timeout 10 podman logs -f qbittorrent "
+echo "############################################################################"
+timeout 10 podman logs -f qbittorrent
+# Collect the temp password
+TEMP_PASSWORD=$(podman logs qbittorrent | tail -10 | grep session: | awk -F': ' '{print $2}')
+echo ""
+echo "############################################################################"
+echo "Perform a basic login event, to validate the password captured from the logs"
+echo "############################################################################"
+echo "true | curl -ks https://localhost:${WEBUI_PORT}/api/v2/auth/login --data-raw \"username=admin&password=${TEMP_PASSWORD}\"  "
+true | curl -ks https://localhost:${WEBUI_PORT}/api/v2/auth/login --data-raw "username=admin&password=${TEMP_PASSWORD}"
+
+echo ""
+echo "############################################################################"
+echo "Tail the qBittorrent log directly, to view any possible errors "
+echo "sudo tail qbittorrent/config/qBittorrent/logs/qbittorrent.log  "
+echo "############################################################################"
+sudo tail qbittorrent/config/qBittorrent/logs/qbittorrent.log
+
+echo ""
+echo "############################################################################"
+echo "Login to the UI with https://$(hostname -f):${WEBUI_PORT}  "
+echo "Login to the UI with https://$(dig +short $(hostname -f)):${WEBUI_PORT}  "
+echo ""
+echo "with l:admin  and  p:${TEMP_PASSWORD}"
+echo ""
+echo "############################################################################"
+echo "You may now run the kiwix-serve podman to service up the *.zim files"
+echo ""

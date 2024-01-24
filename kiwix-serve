@@ -1,0 +1,52 @@
+#!/bin/bash
+######################################################################
+#
+# Offline Wikipedia with podman and container image for kiwix-serve
+#
+# Use this container with the faster download process of qBittorrent
+#
+# References:
+# https://github.com/molomby/kiwix-server
+# https://github.com/kiwix/kiwix-tools/pkgs/container/kiwix-serve
+# https://wiki.kiwix.org/wiki/Content_in_all_languages
+#
+# ANA 01/2024
+#
+######################################################################
+
+ZIM_DATA=qbittorrent/downloads
+DEBUG_LEVEL=warn
+CONTAINER_IMAGE=ghcr.io/kiwix/kiwix-serve:3.6.0
+PORT=8080
+podman ps -a | grep kiwix-serve
+if [ "$?" -eq 0 ]
+ then
+        podman stop  kiwix-serve
+        podman start kiwix-serve
+  else
+        podman rm -f kiwix-serve
+        sleep 5
+
+ podman run -d \
+   --name kiwix-serve \
+   -p ${PORT}:8080 \
+   -v ./${ZIM_DATA}:/data:z \
+   --log-level=${DEBUG_LEVEL} \
+   --restart unless-stopped \
+   ${CONTAINER_IMAGE} ' *.zim'
+fi
+
+sleep 5
+echo "############################################################################"
+podman logs kiwix-serve
+echo "############################################################################"
+podman ps -a --no-trunc | grep kiwix
+
+echo ""
+echo ""
+echo "############################################################################"
+echo "Access the Kiwix UI with http://$(hostname -f):${PORT}  "
+echo "Access the Kiwix UI with http://$(dig +short $(hostname -f)):${PORT}  "
+echo "############################################################################"
+echo ""
+
