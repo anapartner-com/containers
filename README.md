@@ -9,7 +9,6 @@ This information will assist with understanding containers within a **Kubernetes
 Quickly deploy the Jasper Report Server with podman.  This example showcases the use of podman's network/volumes with two (2) containers.
 [jasperreportserver](jasperreportserver)
 ![image](https://github.com/anapartner-com/containers2/assets/51460618/7b2af32a-4a14-4eff-b932-f5650da3d571)
-![image](https://github.com/anapartner-com/containers/assets/51460618/89683771-648f-4422-9351-cd60de92d06b)
 [jasperreportserver container](https://hub.docker.com/r/bitnami/jasperreports/tags)
 
 
@@ -17,7 +16,7 @@ Quickly deploy the Jasper Report Server with podman.  This example showcases the
 Quickly deploy the Nessus Vulnerability Server with podman.  This example requires a free activation code from [Tenable](https://www.tenable.com/products/nessus/nessus-essentials) to use this example. 
 Please note that it may take 60-120 minutes for the full Nessus database to download to your pod.
 [nessus](nessus)
-![image](https://github.com/anapartner-com/containers/assets/51460618/8cbef79f-caee-4569-8d9f-4f32ede21ab7)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/0dec958b-662a-4662-b6e9-d7156e48bd65)
 [nessus container](https://hub.docker.com/r/tenable/nessus/tags)
 
 
