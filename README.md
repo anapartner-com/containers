@@ -23,7 +23,7 @@ Please note that it may take 60-120 minutes for the full Nessus database to down
 ## pgadmin-postgres
 This example will deploy both PostGresDB and the third-party UI of PGAdmin within a single pod.  Please observe two (2) containers using the same network space.  Also included is a post-configuration step using a JSON integration configuration file added to the running container.   This example also uses LetsEncrypt Certs as parameters to the container via volume switches. 
 [pgadmin](pgadmin)
-![image](https://github.com/anapartner-com/containers/assets/51460618/abf455ac-43dc-400c-988c-6e90b9dfebf1)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/ec8af449-5236-41d9-969c-ab82998e5e54)
 [pgadmin4 container](https://hub.docker.com/r/dpage/pgadmin4/tags)
 [postgresdb container](https://hub.docker.com/_/postgres/tags)
 
@@ -31,20 +31,20 @@ This example will deploy both PostGresDB and the third-party UI of PGAdmin withi
 ## splunk
 Quickly deploy Splunk using the provided free license parameter.  This example has a process to modify a configuration file after the fact in the running container.
 [splunk](splunk)
-![image](https://github.com/anapartner-com/containers/assets/51460618/c09d6c35-63f2-4761-b6cb-4ddc32f704fd)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/83ea975b-9194-4869-89bb-319b5df50501)
 [splunk container](https://hub.docker.com/r/splunk/splunk/tags)
 
 
 ## View of running containers/pods
 To debug, we recommend using  **--log-level=debug**    AND   **podman logs -f <container_name>**   to monitor any startup behavior.<br>
 Use  **podman exec -u root -it <container_name> sh**    to view any internal container challenges, configurations, or ENV parameters.
-![image](https://github.com/anapartner-com/containers/assets/51460618/3fac3b18-4225-4f9e-b830-c4e3616354e8)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/48b0ccac-bf69-4ddb-8032-22620988fe56)
 
 
 ## TLS notes
 Additional notes on using TLS certs with containers' environment or volume parameters.  Use LetsEncrypt **cert.pem** and  **privkey.pem**  with the containers to avoid any challenge/enforcement with browsers and the HTTPS protocol.<br>
 [letsencrypt](https://anapartner.com/2023/11/26/streamlining-with-letsencrypt-wildcard-certificates-and-automated-validation/)<br>
-![image](https://github.com/anapartner-com/containers/assets/51460618/17237179-272d-47e5-91eb-277ef782f615)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/989706b3-9c05-47bf-a5c9-18156947f42e)
 <br>Blog entry of LetsEncrypt Certbot binary (without podman) [certbot](https://anapartner.com/2023/07/13/lets-encrypt-dns-challenge/)
 <br>
 #### Create your master chain pem file (with the correct public root CA cert)
@@ -70,12 +70,11 @@ Using two (2) containers, we can rapidly download large (5-100 GB) data files to
 The English edition of Wikipedia with all images and content is over 102 GB, and has been observed to take 4-8 hours to download. <br>
 With the use of qBittorrent, we can get this duraction down to less than 15 minutes. <br>
 This shell script will select only those files that have the string "_en_all_maxi" within the file name.<br>
-[qBittorrent](qbittorrent)<br>
-[qBittorrent container](https://github.com/linuxserver/docker-qbittorrent)
-![image](https://github.com/anapartner-com/containers/assets/51460618/64d8306b-8933-47c3-b225-c55c13c386cd)<br>
-[Kiwix](kiwix-serve)<br>
-[Kiwix container](https://github.com/kiwix/kiwix-tools/tree/main/docker)
-![image](https://github.com/anapartner-com/containers/assets/51460618/c0a0a608-58ab-4369-a87a-1eadf6d40cb2)
+[qBittorrent](qbittorrent) [qBittorrent container](https://github.com/linuxserver/docker-qbittorrent)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/94a519a7-e3a1-45e9-93ae-2d30b30f7bb6)
+<br>
+[Kiwix](kiwix-serve) [Kiwix container](https://github.com/kiwix/kiwix-tools/tree/main/docker)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/fc40dc5d-9079-4236-8242-324c19cff510)
 <br>
 [Full Kiwix Library](https://wiki.kiwix.org/wiki/Content_in_all_languages)
 <br>
