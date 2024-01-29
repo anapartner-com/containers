@@ -12,13 +12,14 @@
 # BusyBox allows space-efficient distributions to configure a minimal Linux OS for embedded or IoT devices. 
 # The same goes when you want to keep the size of your new container small.
 # Example:  https://hub.docker.com/_/alpine   (<5MB) 
+# podman run --name alpine -h alpine -it --rm alpine:latest sh -c 'hostname -f ; ip -4 a ; env ; ping localhost '
 
 
 # The below lines are equivalent to start the busybox container.
 
 podman run -it --rm busybox
 podman run -u root --rm -it docker.io/library/busybox
-podman run -u root --rm -it docker.io/library/busybox sh
+podman run -u root --rm -it docker.io/library/busybox sh         [This will start the container and shell into it as well]
 
 
 
