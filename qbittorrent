@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################
 #
-#  Continer version of qBittorrent
+#  Container version of qBittorrent
 #   - Normal download of Wikipedia English of 102 GB takes over 6 hours
 #   - With container use of qBittorrent, we can reduce this down to < 15 min
 #
