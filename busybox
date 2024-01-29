@@ -120,3 +120,22 @@ Currently defined functions:
         usleep, uudecode, uuencode, vconfig, vi, vlock, volname, w, wall, watch, watchdog, wc, wget, which, who, whoami, whois, xargs, xxd, xz, xzcat, yes, zcat, zcip
 
 
+
+# To keep a container running if the ENTRYPOINT is not set with a foreground process.
+# Ref.  https://devopscube.com/keep-docker-container-running/
+
+Method 1: Use pseudo-tty [-t ] parameter to keep the container running.   [Most common]
+
+podman run -d -t busybox 
+
+Method 2: Using the tail command via CMD arguments as shown below.
+
+podman run -d busybox tail -f /dev/null
+
+Method 3: Using sleep infinity via CMD argument
+
+podman run -d busybox sleep infinity
+
+# View running container with command sent.
+
+podman ps -a --no-trunc | grep busybox
