@@ -92,10 +92,10 @@ echo "podman stop qbittorrent "
 echo "############################################################################"
 podman stop qbittorrent
 
-#exit
+
 echo ""
 echo "############################################################################"
-echo "# Customized the qBittorrent configuration that we could not do "
+echo "# Customized the qBittorrent configuration that we could not do with external podman switches"
 echo "# via the existing container from linuxserver.io/qbittorrent "
 echo "############################################################################"
 echo "# To avoid issues with Chrome and Firefox with HTTPS protocol "
