@@ -1,0 +1,132 @@
+#!/bin/bash
+#################################################################################
+#
+#  Goal:  Create a local container registry with no authentication
+#   - Note:  No UI with this basic container registry
+#   - Use curl, podman, skopeo to manage
+#
+#  Registry images may be placed on NFS or LOCAL share
+#    - NFS Server must allow read/write operaions
+#    mount -v -t nfs NFS_HOSTNAME_HERE:/volume1/nfs /mnt  &>/dev/null
+#
+#  Recommened use of  LetsEncrypt certs every 90 days
+#
+#
+# ANA 11/2023
+#
+#################################################################################
+#set -xo
+
+REGISTRY_NAME=registry-mirror
+TLS_DOMAIN="anapartner.dev"
+# Ensure this FQDN resolves to an IP address in your local DNS or online
+REGISTRY=registry.ocp.${TLS_DOMAIN}
+# Default port is 443
+PORT=445
+
+# Recommendation: Setup LetsEncrypt certs to add certs
+# - Ensure cert has either FQDN or wildcard SAN certs
+CERTFOLDER=/root/labs/letsencrypt
+
+
+echo ""
+echo "#################################################################################"
+echo "### Create docker registry                                                  #####"
+echo "#################################################################################"
+podman stop ${REGISTRY_NAME}
+podman rm -f ${REGISTRY_NAME} &>/dev/null
+sleep 2
+echo "
+podman run -d --name ${REGISTRY_NAME} -p ${PORT}:443 \
+  --restart=always \
+  -v ${CERTFOLDER}:/certs:z \
+  -e REGISTRY_HTTP_ADDR=0.0.0.0:443 \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem \
+  -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem \
+  -e REGISTRY_COMPATIBILITY_SCHEMA1_ENABLED=true \
+  -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+  -e REGISTRY_HTTP_SECRET=secret \
+   docker.io/registry:latest
+"
+
+podman run -d --name ${REGISTRY_NAME} -p ${PORT}:443 \
+  --restart=always \
+  -v ${CERTFOLDER}:/certs:z \
+  -e REGISTRY_HTTP_ADDR=0.0.0.0:443 \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem \
+  -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem \
+  -e REGISTRY_COMPATIBILITY_SCHEMA1_ENABLED=true \
+  -e REGISTRY_STORAGE_DELETE_ENABLED=true \
+  -e REGISTRY_HTTP_SECRET=secret \
+   docker.io/registry:latest
+
+
+echo ""
+echo "sleep for 5 seconds  - then check status with podman "
+sleep 5
+echo "#################################################################################"
+echo "podman ps -a  | grep ${REGISTRY_NAME} "
+echo "#################################################################################"
+podman ps -a  | grep ${REGISTRY_NAME}
+echo "#################################################################################"
+echo "### Check Catalog with curl  before adding more images with skopeop #############"
+echo "#################################################################################"
+echo "curl -s -X GET  https://${REGISTRY}:${PORT}/v2/_catalog | jq "
+curl -s -X GET  https://${REGISTRY}:${PORT}/v2/_catalog | jq
+echo ""
+echo ""
+echo "#################################################################################"
+echo "### Tail the log of registry container upon startup for 5 seconds          ######"
+echo "###                                                                        ######"
+echo "         timeout 5  podman logs -f ${REGISTRY_NAME}   "
+echo "###                                                                        ######"
+echo "### Monitor for any error messages                                         ######"
+echo "###                                                                        ######"
+echo "#################################################################################"
+echo ""
+echo ""
+timeout 5  podman logs -f ${REGISTRY_NAME}
+echo ""
+echo ""
+echo "#################################################################################"
+echo "######### DONE & NOW TEST AN UPLOAD AND THE CATALOG #############################"
+echo "#################################################################################"
+echo ""
+echo ""
+echo "#################################################################################"
+echo "skopeo copy   --override-arch amd64  docker://docker.io/library/alpine:latest docker://${REGISTRY}:${PORT}/library/alpine:latest"
+echo "#################################################################################"
+skopeo copy  --override-arch amd64  docker://docker.io/library/alpine:latest docker://${REGISTRY}:${PORT}/library/alpine:latest
+echo "#################################################################################"
+echo "skopeo inspect docker://${REGISTRY}:${PORT}/library/alpine:latest | jq"
+echo "#################################################################################"
+skopeo inspect docker://${REGISTRY}:${PORT}/library/alpine:latest | jq
+echo ""
+echo "#################################################################################"
+echo "skopeo delete  docker://${REGISTRY}:${PORT}/library/alpine:latest"
+echo "#################################################################################"
+#skopeo delete  docker://${HOST}:${PORT}/library/alpine:latest
+echo ""
+echo "#################################################################################"
+echo "podman inspect ${REGISTRY_NAME} | jq | head "
+echo "#################################################################################"
+podman inspect ${REGISTRY_NAME} | jq | head
+echo ""
+echo "#################################################################################"
+podman ps -a | grep -i -e CONTAINER -e ${REGISTRY_NAME}
+echo "#################################################################################"
+echo ""
+echo ""
+echo "#################################################################################"
+echo "### Check Catalog with curl after adding an image with skopeop    ###############"
+echo "#################################################################################"
+echo ""
+echo "curl -s -X GET  https://${REGISTRY}:${PORT}/v2/_catalog | jq"
+curl -s -X GET  https://${REGISTRY}:${PORT}/v2/_catalog | jq
+echo ""
+echo "curl -s -X GET  https://${REGISTRY}:${PORT}/v2/library/alpine/tags/list  | jq "
+curl -s -X GET  https://${REGISTRY}:${PORT}/v2/library/alpine/tags/list  | jq
+echo ""
+echo "#################################################################################"
+echo ""
+echo ""
