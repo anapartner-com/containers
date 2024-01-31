@@ -44,6 +44,11 @@ Use  **podman exec -u root -it <container_name> sh**    to view any internal con
 A GitHub repo example of using RedHat mirror-registry process (with embedded containers) 
 [quay-registry](https://github.com/anapartner-com/quay-registry)
 
+## mitm
+Blog entry on use of podman to deploy a Man-In-The-Middle proxy.
+[mitm](https://anapartner.com/2023/07/13/secure-application-introspection/)
+<br>
+<br>
 
 ## qBittorrent and Kiwix 
 Using two (2) containers, we can rapidly download large (5-100 GB) data files to our local workstation to service a local edition of Wikipedia and other sites in ZIM extension.<br>
@@ -80,9 +85,5 @@ keytool -v -importkeystore -srckeystore  keyStore.p12 -srcstoretype PKCS12 -srcs
 <br>
 
 
-## mitm
-Blog entry on use of podman to deploy a Man-In-The-Middle proxy.
-[mitm](https://anapartner.com/2023/07/13/secure-application-introspection/)
-<br>
-<br>
+
 
