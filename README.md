@@ -40,6 +40,27 @@ To debug, we recommend using  **--log-level=debug**    AND   **podman logs -f <c
 Use  **podman exec -u root -it <container_name> sh**    to view any internal container challenges, configurations, or ENV parameters.
 ![image](https://github.com/anapartner-com/containers2/assets/51460618/48b0ccac-bf69-4ddb-8032-22620988fe56)
 
+## quay-registry
+A GitHub repo example of using RedHat mirror-registry process (with embedded containers) 
+[quay-registry](https://github.com/anapartner-com/quay-registry)
+
+
+## qBittorrent and Kiwix 
+Using two (2) containers, we can rapidly download large (5-100 GB) data files to our local workstation to service a local edition of Wikipedia and other sites in ZIM extension.<br>
+The English edition of Wikipedia with all images and content is over 102 GB, and has been observed to take 4-8 hours to download. <br>
+With the use of qBittorrent, we can get this duraction down to less than 15 minutes. <br>
+This shell script will select only those files that have the string "_en_all_maxi" within the file name.<br>
+[qBittorrent](qbittorrent) [qBittorrent container](https://github.com/linuxserver/docker-qbittorrent)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/94a519a7-e3a1-45e9-93ae-2d30b30f7bb6)
+<br>
+[Kiwix](kiwix-serve) [Kiwix container](https://github.com/kiwix/kiwix-tools/tree/main/docker)
+![image](https://github.com/anapartner-com/containers2/assets/51460618/fc40dc5d-9079-4236-8242-324c19cff510)
+<br>
+[Full Kiwix Library](https://wiki.kiwix.org/wiki/Content_in_all_languages)
+<br>
+[Online Kiwix Library](https://library.kiwix.org/#lang=eng)
+
+
 
 ## TLS notes
 Additional notes on using TLS certs with containers' environment or volume parameters.  Use LetsEncrypt **cert.pem** and  **privkey.pem**  with the containers to avoid any challenge/enforcement with browsers and the HTTPS protocol.<br>
@@ -59,24 +80,9 @@ keytool -v -importkeystore -srckeystore  keyStore.p12 -srcstoretype PKCS12 -srcs
 <br>
 
 
-### mitm
+## mitm
 Blog entry on use of podman to deploy a Man-In-The-Middle proxy.
 [mitm](https://anapartner.com/2023/07/13/secure-application-introspection/)
 <br>
 <br>
-
-## qBittorrent and Kiwix 
-Using two (2) containers, we can rapidly download large (5-100 GB) data files to our local workstation to service a local edition of Wikipedia and other sites in ZIM extension.<br>
-The English edition of Wikipedia with all images and content is over 102 GB, and has been observed to take 4-8 hours to download. <br>
-With the use of qBittorrent, we can get this duraction down to less than 15 minutes. <br>
-This shell script will select only those files that have the string "_en_all_maxi" within the file name.<br>
-[qBittorrent](qbittorrent) [qBittorrent container](https://github.com/linuxserver/docker-qbittorrent)
-![image](https://github.com/anapartner-com/containers2/assets/51460618/94a519a7-e3a1-45e9-93ae-2d30b30f7bb6)
-<br>
-[Kiwix](kiwix-serve) [Kiwix container](https://github.com/kiwix/kiwix-tools/tree/main/docker)
-![image](https://github.com/anapartner-com/containers2/assets/51460618/fc40dc5d-9079-4236-8242-324c19cff510)
-<br>
-[Full Kiwix Library](https://wiki.kiwix.org/wiki/Content_in_all_languages)
-<br>
-[Online Kiwix Library](https://library.kiwix.org/#lang=eng)
 
