@@ -6,7 +6,7 @@
 #   - Use curl, podman, skopeo to manage
 #
 #  Registry images may be placed on NFS or LOCAL share
-#    - NFS Server must allow read/write operaions
+#    - NFS Server must allow read/write operations
 #    mount -v -t nfs NFS_HOSTNAME_HERE:/volume1/nfs /mnt  &>/dev/null
 #
 #  Recommened use of  LetsEncrypt certs every 90 days
